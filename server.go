@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -45,9 +46,9 @@ func (s *Server) InitRoutes() {
 	})
 
 	s.Router.Route("/characters", func(r chi.Router) {
-		r.Get("/", ListCharacters)
+		r.Get("/", s.ListCharacters)
 		r.Route("/{characterId}", func(r chi.Router) {
-			r.Get("/", GetCharacter)
+			r.Get("/", s.GetCharacter)
 		})
 	})
 }
@@ -74,11 +75,34 @@ func GetFaction(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListCharacters - list all characters
-func ListCharacters(w http.ResponseWriter, r *http.Request) {
-	//if err := render.RenderList()
+func (s *Server) ListCharacters(w http.ResponseWriter, r *http.Request) {
+	characters, err := getCharacters(s.DB)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, characters)
 }
 
 // GetCharacter - get character details given a character id
-func GetCharacter(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetCharacter(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "characterId")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Invalid character id")
+	}
 
+	c := character{ID: id}
+	if err := c.getCharacter(s.DB); err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			respondWithError(w, http.StatusNotFound, "Character not found")
+		default:
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, c)
 }

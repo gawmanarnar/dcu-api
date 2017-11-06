@@ -1,7 +1,7 @@
 package main
 
 import "database/sql"
-import "fmt"
+import "github.com/lib/pq"
 
 type character struct {
 	ID           int      `json:"id"`
@@ -13,8 +13,13 @@ type character struct {
 	Affilitions  []string `json:"affiliation"`
 }
 
+func (c *character) getCharacter(db *sql.DB) error {
+	row := db.QueryRow("SELECT id, name, proper_name, level, product_image, card_image, affiliation FROM characters WHERE id=$1", c.ID)
+	return row.Scan(&c.ID, &c.Name, &c.ProperName, &c.Level, &c.ProductImage, &c.CardImage, pq.Array(&c.Affilitions))
+}
+
 func getCharacters(db *sql.DB) ([]character, error) {
-	rows, err := db.Query("SELECT * FROM characters")
+	rows, err := db.Query("SELECT id, name, proper_name, level, product_image, card_image, affiliation FROM characters")
 
 	if err != nil {
 		return nil, err
@@ -23,9 +28,8 @@ func getCharacters(db *sql.DB) ([]character, error) {
 	characters := []character{}
 
 	for rows.Next() {
-		fmt.Println("hello")
 		var c character
-		if err := rows.Scan(&c.ID, &c.Name, &c.ProperName, &c.Level, &c.ProductImage, &c.CardImage, &c.Affilitions); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.ProperName, &c.Level, &c.ProductImage, &c.CardImage, pq.Array(&c.Affilitions)); err != nil {
 			return nil, err
 		}
 		characters = append(characters, c)
