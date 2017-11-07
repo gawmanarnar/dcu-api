@@ -41,7 +41,7 @@ func (s *Server) InitRoutes() {
 	s.Router.Route("/factions", func(r chi.Router) {
 		r.Get("/", s.ListFactions)
 		r.Route("/{factionId}", func(r chi.Router) {
-			r.Get("/", GetFaction)
+			r.Get("/", s.GetFaction)
 		})
 	})
 
@@ -70,8 +70,20 @@ func (s *Server) ListFactions(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetFaction - all characters that belong to a specific faction id
-func GetFaction(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetFaction(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "factionId")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Invalid faction id")
+	}
 
+	characters, err := getFaction(s.DB, id)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, characters)
 }
 
 // ListCharacters - list all characters
