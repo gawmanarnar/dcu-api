@@ -76,14 +76,14 @@ func (s *Server) GetFaction(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Invalid faction id")
 	}
-
-	characters, err := getFaction(s.DB, id)
+	f := faction{ID: id}
+	err = f.getFaction(s.DB)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, characters)
+	respondWithJSON(w, http.StatusOK, f)
 }
 
 // ListCharacters - list all characters

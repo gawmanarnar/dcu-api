@@ -7,28 +7,36 @@ import (
 )
 
 type faction struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID         int         `json:"id"`
+	Name       string      `json:"name"`
+	Characters []character `json:"characters"`
 }
 
-func getFaction(db *sql.DB, id int) ([]character, error) {
+func (f *faction) getFaction(db *sql.DB) error {
+	row := db.QueryRow("SELECT id, name FROM factions WHERE id=$1", f.ID)
+	if err := row.Scan(&f.ID, &f.Name); err != nil {
+		return err
+	}
+
 	query := "SELECT c.id, c.name, c.proper_name, c.level, c.product_image, c.card_image, c.affiliation FROM characters c" +
 		" JOIN factions f ON f.id = ANY(c.affiliation) WHERE f.id=$1"
-	rows, err := db.Query(query, id)
+	rows, err := db.Query(query, f.ID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rows.Close()
 
 	characters := []character{}
 	for rows.Next() {
 		var c character
-		if err := rows.Scan(&c.ID, &c.Name, &c.ProperName, &c.Level, &c.ProductImage, &c.CardImage, pq.Array(&c.Affilitions)); err != nil {
-			return nil, err
+		err := rows.Scan(&c.ID, &c.Name, &c.ProperName, &c.Level, &c.ProductImage, &c.CardImage, pq.Array(&c.Affilitions))
+		if err != nil {
+			return err
 		}
 		characters = append(characters, c)
 	}
-	return characters, nil
+	f.Characters = characters
+	return nil
 }
 
 func getFactions(db *sql.DB) ([]faction, error) {
