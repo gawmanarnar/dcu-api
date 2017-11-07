@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
 	_ "github.com/lib/pq"
 )
 
@@ -26,9 +27,19 @@ func (s *Server) Init(user, password, dbname string) {
 	s.DB, err = sql.Open("postgres", connection)
 	checkError(err)
 
+	cors := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	})
+
 	s.Router = chi.NewRouter()
 	s.Router.Use(middleware.Logger)
 	s.Router.Use(middleware.Recoverer)
+	s.Router.Use(cors.Handler)
 	s.InitRoutes()
 }
 
