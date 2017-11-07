@@ -1,7 +1,10 @@
 package main
 
-import "database/sql"
-import "github.com/lib/pq"
+import (
+	"database/sql"
+
+	"github.com/lib/pq"
+)
 
 type character struct {
 	ID           int      `json:"id"`
